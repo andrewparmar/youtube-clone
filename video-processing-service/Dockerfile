@@ -33,6 +33,7 @@ RUN npm install --only=production
 
 # Copy built app from the builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/raw-videos ./raw-videos
 
 # Make port 3000 available to the world outside this container
 EXPOSE 3000
