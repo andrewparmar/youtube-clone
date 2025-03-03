@@ -2,7 +2,7 @@ import {Storage, UploadOptions} from '@google-cloud/storage'
 import ffmpeg from "fluent-ffmpeg";
 import path from 'node:path'
 import * as fs from 'node:fs/promises';
-import {mkdir} from 'node:fs';
+import {mkdirSync} from 'node:fs';
 
 const storage = new Storage();
 
@@ -15,7 +15,7 @@ const localProcessedVideoPath = './processed-videos'
  * Creates the local directories for raw and processed videos.
  */
 export function setupDirectories() {
-	console.log("Setting up service directories.")
+	console.log("Setting up service directories.");
 	ensureDirectoryExists(localRawVideoPath);
 	ensureDirectoryExists(localProcessedVideoPath);
 }
@@ -94,7 +94,11 @@ async function deleteFile(filePath: string): Promise<void> {
 // }
 
 function ensureDirectoryExists(dirName: string) {
-	mkdir(dirName, {recursive: true}, (err) => {
-		if (err) throw err;
-	});
+	try {
+		mkdirSync(dirName, {recursive: true})
+		console.log(`Created ${dirName}`);
+	} catch (err) {
+		console.log("An error occured while creating the required directories")
+		throw err
+	}
 }
