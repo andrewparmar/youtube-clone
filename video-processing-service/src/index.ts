@@ -20,6 +20,10 @@ app.post("/process-video", async (req, res) => {
 	res.status(200).send("Video processing complete.")
 });
 
+app.get("/", async (req, res) => {
+	res.status(200).send("Welcome to the video processing service")
+})
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
 	console.log(`Video processing service listening at http://localhost:${port}`)

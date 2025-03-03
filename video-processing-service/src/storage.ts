@@ -11,6 +11,9 @@ const processedVideoBucketName = ''
 const localRawVideoPath = './raw-videos'
 const localProcessedVideoPath = './processed-videos'
 
+/**
+ * Creates the local directories for raw and processed videos.
+ */
 export function setupDirectories() {
 	console.log("Setting up service directories.")
 	ensureDirectoryExists(localRawVideoPath);
@@ -36,7 +39,7 @@ export function convertVideo(rawVideoName: string, processedVideoName: string): 
 	})
 }
 
-export async function downloadRawVideo(fileName: string) {
+export async function downloadRawVideo(fileName: string): Promise<void>{
 	const filePath = path.join(localRawVideoPath, fileName)
 	const options = {destination: filePath};
 
@@ -46,7 +49,7 @@ export async function downloadRawVideo(fileName: string) {
 	console.log(`gs://${rawVideoBucketName}/${fileName} downloaded to ${filePath}.`);
 }
 
-export async function uploadProcessedVideo(fileName: string) {
+export async function uploadProcessedVideo(fileName: string): Promise<void> {
 	const bucket = storage.bucket(processedVideoBucketName)
 	const options = {destination: fileName} as UploadOptions;
 
@@ -56,11 +59,11 @@ export async function uploadProcessedVideo(fileName: string) {
 	await bucket.file(fileName).makePublic();
 }
 
-export async function deleteRawVideo(fileName: string) {
+export async function deleteRawVideo(fileName: string): Promise<void> {
 	await deleteFile(path.join(localRawVideoPath, fileName))
 }
 
-export async function deleteProcessedVideo(fileName: string) {
+export async function deleteProcessedVideo(fileName: string): Promise<void> {
 	await deleteFile(path.join(localProcessedVideoPath, fileName))
 }
 
