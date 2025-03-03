@@ -80,25 +80,12 @@ async function deleteFile(filePath: string): Promise<void> {
 	}
 }
 
-// async function ensureDirectoryExists(dirName: string){
-// 	try {
-// 		await fs.mkdir(dirName);
-// 		console.log(`Created ${dirName}`);
-// 	} catch (error) {
-// 		if (error instanceof Error) {
-// 			console.log("There was an error:", error.message);
-// 		} else {
-// 			console.log("An unknown error occurred:", error);
-// 		}
-// 	}
-// }
-
 function ensureDirectoryExists(dirName: string) {
 	try {
 		mkdirSync(dirName, {recursive: true})
 		console.log(`Created ${dirName}`);
 	} catch (err) {
-		console.log("An error occured while creating the required directories")
+		console.error(`An error occured while creating the required directories ${err}`)
 		throw err
 	}
 }
