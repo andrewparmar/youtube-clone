@@ -6,8 +6,8 @@ import {mkdirSync} from 'node:fs';
 
 const storage = new Storage();
 
-const rawVideoBucketName = ''
-const processedVideoBucketName = ''
+const rawVideoBucketName = 'ap-yt-raw-videos'
+const processedVideoBucketName = 'ap-yt-processed-videos'
 const localRawVideoPath = './raw-videos'
 const localProcessedVideoPath = './processed-videos'
 
@@ -22,21 +22,36 @@ export function setupDirectories() {
 
 export function convertVideo(rawVideoName: string, processedVideoName: string): Promise<void> {
 	return new Promise((resolve, reject) => {
-		ffmpeg(path.join(localRawVideoPath, rawVideoName))
+		const inputPath = path.join(localRawVideoPath, rawVideoName);
+		const outputPath = path.join(localProcessedVideoPath, processedVideoName);
+
+		console.log(`Starting video processing: ${inputPath} -> ${outputPath}`);
+
+		ffmpeg(inputPath)
 			.outputOptions("-vf", "scale=-1:360") // 360p
-			.on("progress", progress => {
-				if (progress.percent) console.log(`Processing: ${progress.percent}% done`)
+			.on("start", (cmdline) => console.log("FFmpeg command:", cmdline))
+			.on("progress", (progress) => {
+				if (progress.percent) console.log(`Processing: ${progress.percent}% done`);
 			})
-			.on("end", () => {
-				console.log("Video processing completed.");
-				resolve();
+			.on("end", async () => {
+				console.log(`Video processing completed: ${outputPath}`);
+				
+				// Ensure the file exists
+				try {
+					await fs.access(outputPath);
+					console.log(`Verified processed file exists: ${outputPath}`);
+					resolve();
+				} catch (err) {
+					console.error(`Error: Processed file not found after conversion: ${outputPath}`, err);
+					reject(new Error(`Processed file not found: ${outputPath}`));
+				}
 			})
 			.on("error", (err) => {
-				console.log(`Error: ${err.message}`);
+				console.log(`FFmpeg error: ${err.message}`);
 				reject(err);
 			})
-			.save(path.join(localProcessedVideoPath, processedVideoName));
-	})
+			.save(outputPath);
+	});
 }
 
 export async function downloadRawVideo(fileName: string): Promise<void>{
@@ -44,19 +59,28 @@ export async function downloadRawVideo(fileName: string): Promise<void>{
 	const options = {destination: filePath};
 
 	// Downloads the file
-	await storage.bucket(processedVideoBucketName).file(fileName).download(options);
+	console.log(`Downloading file:${fileName} from ${rawVideoBucketName}`)
+	await storage.bucket(rawVideoBucketName).file(fileName).download(options);
 
 	console.log(`gs://${rawVideoBucketName}/${fileName} downloaded to ${filePath}.`);
 }
-
 export async function uploadProcessedVideo(fileName: string): Promise<void> {
-	const bucket = storage.bucket(processedVideoBucketName)
-	const options = {destination: fileName} as UploadOptions;
+	const bucket = storage.bucket(processedVideoBucketName);
+	const filePath = path.join(localProcessedVideoPath, fileName);
+	const options = { destination: fileName } as UploadOptions;
 
-	await bucket.upload(fileName, options);
-	console.log(`${fileName} uploaded to ${processedVideoBucketName}`);
+	console.log(`Starting upload of ${filePath} to ${processedVideoBucketName}`);
 
-	await bucket.file(fileName).makePublic();
+	try {
+		await bucket.upload(filePath, options);
+		console.log(`${fileName} uploaded successfully.`);
+
+		await bucket.file(fileName).makePublic();
+		console.log(`File made public: gs://${processedVideoBucketName}/${fileName}`);
+	} catch (error) {
+		console.error(`Upload failed for ${filePath}:`, error);
+		throw error;
+	}
 }
 
 export async function deleteRawVideo(fileName: string): Promise<void> {
