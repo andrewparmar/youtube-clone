@@ -36,25 +36,23 @@ app.post('/process-video', async (req, res): Promise<void> => {
 	// Download the raw video from Cloud Storage
 	await downloadRawVideo(inputFileName);
 
-	// Process the video into 360p
 	try {
-	  await convertVideo(inputFileName, outputFileName)
-	} catch (err) {
-	  await Promise.all([
-		deleteRawVideo(inputFileName),
-		deleteProcessedVideo(outputFileName)
-	  ]);
-	  res.status(500).send('Processing failed');
-	  return
-	}
-
-	// Upload the processed video to Cloud Storage
-	await uploadProcessedVideo(outputFileName);
-
-	await Promise.all([
-	  deleteRawVideo(inputFileName),
-	  deleteProcessedVideo(outputFileName)
-	]);
+		// Process the video into 360p
+		await convertVideo(inputFileName, outputFileName);
+	  
+		// Upload the processed video to Cloud Storage
+		await uploadProcessedVideo(outputFileName);
+	  } catch (err) {
+		res.status(500).send('Processing failed');
+		return;
+	  } finally {
+		// Ensure cleanup happens no matter what
+		await Promise.all([
+		  deleteRawVideo(inputFileName),
+		  deleteProcessedVideo(outputFileName)
+		]);
+	  }
+	  
 
 	res.status(200).send('Processing finished successfully');
   });
